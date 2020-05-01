@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 import React from 'react';
-
 import { Row, Col } from 'antd/lib/grid';
 import Select from 'antd/lib/select';
 import Button from 'antd/lib/button';
@@ -12,9 +11,10 @@ import Radio, { RadioChangeEvent } from 'antd/lib/radio';
 import Tooltip from 'antd/lib/tooltip';
 import Text from 'antd/lib/typography/Text';
 
-import { RectDrawingMethod } from 'cvat-canvas';
+import { RectDrawingMethod } from 'cvat-canvas-wrapper';
 import { ShapeType } from 'reducers/interfaces';
 import { clamp } from 'utils/math';
+import DEXTRPlugin from './dextr-plugin';
 
 interface Props {
     shapeType: ShapeType;
@@ -46,6 +46,9 @@ function DrawShapePopoverComponent(props: Props): JSX.Element {
         onChangePoints,
         onChangeRectDrawingMethod,
     } = props;
+
+    const trackDisabled = shapeType === ShapeType.POLYGON || shapeType === ShapeType.POLYLINE
+        || shapeType === ShapeType.CUBOID || (shapeType === ShapeType.POINTS && numberOfPoints !== 1);
 
     return (
         <div className='cvat-draw-shape-popover-content'>
@@ -79,7 +82,10 @@ function DrawShapePopoverComponent(props: Props): JSX.Element {
                 </Col>
             </Row>
             {
-                shapeType === ShapeType.RECTANGLE ? (
+                shapeType === ShapeType.POLYGON && <DEXTRPlugin />
+            }
+            {
+                shapeType === ShapeType.RECTANGLE && (
                     <>
                         <Row>
                             <Col>
@@ -109,7 +115,10 @@ function DrawShapePopoverComponent(props: Props): JSX.Element {
                             </Col>
                         </Row>
                     </>
-                ) : (
+                )
+            }
+            {
+                shapeType !== ShapeType.RECTANGLE && shapeType !== ShapeType.CUBOID && (
                     <Row type='flex' justify='space-around' align='middle'>
                         <Col span={14}>
                             <Text className='cvat-text-color'> Number of points: </Text>
@@ -148,7 +157,7 @@ function DrawShapePopoverComponent(props: Props): JSX.Element {
                     <Tooltip title={`Press ${repeatShapeShortcut} to draw again`}>
                         <Button
                             onClick={onDrawTrack}
-                            disabled={shapeType !== ShapeType.RECTANGLE}
+                            disabled={trackDisabled}
                         >
                             Track
                         </Button>

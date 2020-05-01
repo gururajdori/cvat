@@ -23,11 +23,13 @@ const defaultState: SettingsState = {
         selectedOpacity: 30,
         blackBorders: false,
         showBitmap: false,
+        showProjections: false,
     },
     workspace: {
         autoSave: false,
         autoSaveInterval: 15 * 60 * 1000,
         aamZoomMargin: 100,
+        automaticBordering: false,
         showObjectsTextAlways: false,
         showAllInterpolationTracks: false,
     },
@@ -126,6 +128,15 @@ export default (state = defaultState, action: AnyAction): SettingsState => {
                 shapes: {
                     ...state.shapes,
                     blackBorders: action.payload.blackBorders,
+                },
+            };
+        }
+        case SettingsActionTypes.CHANGE_SHAPES_SHOW_PROJECTIONS: {
+            return {
+                ...state,
+                shapes: {
+                    ...state.shapes,
+                    showProjections: action.payload.showProjections,
                 },
             };
         }
@@ -234,6 +245,15 @@ export default (state = defaultState, action: AnyAction): SettingsState => {
                 workspace: {
                     ...state.workspace,
                     showObjectsTextAlways: action.payload.showObjectsTextAlways,
+                },
+            };
+        }
+        case SettingsActionTypes.SWITCH_AUTOMATIC_BORDERING: {
+            return {
+                ...state,
+                workspace: {
+                    ...state.workspace,
+                    automaticBordering: action.payload.automaticBordering,
                 },
             };
         }

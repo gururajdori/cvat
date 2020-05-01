@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 import { ExtendedKeyMapOptions } from 'react-hotkeys';
-import { Canvas, RectDrawingMethod } from 'cvat-canvas';
+import { Canvas, RectDrawingMethod } from 'cvat-canvas-wrapper';
 
 export type StringObject = {
     [index: string]: string;
@@ -57,6 +57,7 @@ export interface TasksState {
         };
         creates: {
             status: string;
+            error: string;
         };
     };
 }
@@ -74,7 +75,9 @@ export enum SupportedPlugins {
     AUTO_ANNOTATION = 'AUTO_ANNOTATION',
     TF_ANNOTATION = 'TF_ANNOTATION',
     TF_SEGMENTATION = 'TF_SEGMENTATION',
+    DEXTR_SEGMENTATION = 'DEXTR_SEGMENTATION',
     ANALYTICS = 'ANALYTICS',
+    REID = 'REID',
 }
 
 export interface PluginsState {
@@ -259,6 +262,7 @@ export enum ActiveControl {
     DRAW_POLYGON = 'draw_polygon',
     DRAW_POLYLINE = 'draw_polyline',
     DRAW_POINTS = 'draw_points',
+    DRAW_CUBOID = 'draw_cuboid',
     MERGE = 'merge',
     GROUP = 'group',
     SPLIT = 'split',
@@ -270,6 +274,7 @@ export enum ShapeType {
     POLYGON = 'polygon',
     POLYLINE = 'polyline',
     POINTS = 'points',
+    CUBOID = 'cuboid',
 }
 
 export enum ObjectType {
@@ -316,6 +321,7 @@ export interface AnnotationState {
     };
     job: {
         labels: any[];
+        requestedId: number | null;
         instance: any | null | undefined;
         attributes: Record<number, any[]>;
         fetching: boolean;
@@ -426,6 +432,7 @@ export interface WorkspaceSettingsState {
     autoSave: boolean;
     autoSaveInterval: number; // in ms
     aamZoomMargin: number;
+    automaticBordering: boolean;
     showObjectsTextAlways: boolean;
     showAllInterpolationTracks: boolean;
 }
@@ -436,6 +443,7 @@ export interface ShapesSettingsState {
     selectedOpacity: number;
     blackBorders: boolean;
     showBitmap: boolean;
+    showProjections: boolean;
 }
 
 export interface SettingsState {

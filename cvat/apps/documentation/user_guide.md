@@ -8,8 +8,8 @@
   - [Interface of the annotation tool](#interface-of-the-annotation-tool)
     - [Basic navigation](#basic-navigation)
     - [Types of shapes (basics)](#types-of-shapes-basics)
-    - [Annotation mode (basics)](#annotation-mode-basics)
-    - [Interpolation mode (basics)](#interpolation-mode-basics)
+    - [Shape mode (basics)](#shape-mode-basics)
+    - [Track mode (basics)](#track-mode-basics)
     - [Attribute annotation mode (basics)](#attribute-annotation-mode-basics)
     - [Downloading annotations](#downloading-annotations)
     - [Task synchronization with a repository](#task-synchronization-with-a-repository)
@@ -187,7 +187,7 @@ Go to the [Django administration panel](http://localhost:8080/admin). There you 
     **Stop frame**. Frame on which video in task ends.
 
     **Frame Step**. Use this option to filter video frames.
-    For example, enter ``25`` to leave every twenty fifth frame in the video. Use this option on video files only.
+    For example, enter ``25`` to leave every twenty fifth frame in the video or every twenty fifth image. 
 
     **Chunk size**. Defines a number of frames to be packed in a chunk when send from client to server.
     Server defines automatically if empty. 
@@ -255,7 +255,7 @@ Go to the [Django administration panel](http://localhost:8080/admin). There you 
 1.  Task details is a task page which contains a preview, a progress bar 
     and the details of the task (specified when the task was created) and the jobs section.
   
-    ![](static/documentation/images/image131.jpg)
+    ![](static/documentation/images/image131_DETRAC.jpg)
 
     - The next actions are available on this page:
       1. Change the task’s title.
@@ -267,7 +267,7 @@ Go to the [Django administration panel](http://localhost:8080/admin). There you 
       1. Assigned to — is used to assign a task to a person. Start typing an assignee’s name and/or 
       choose the right person out of the dropdown list.
     - ``Jobs`` — is a list of all jobs for a particular task. Here you can find the next data:
-      - Jobs name whit a hyperlink to it.
+      - Jobs name with a hyperlink to it.
       - Frames — the frame interval. 
       - A status of the job. The status is specified by the user in the menu inside the job. 
       There are three types of status: annotation, validation or completed. 
@@ -285,7 +285,7 @@ Go to the [Django administration panel](http://localhost:8080/admin). There you 
     UX, only the first chunk of several frames will be loaded and you will be able
     to annotate first images. Other frames will be loaded in background.
 
-    ![](static/documentation/images/image007.jpg)
+    ![](static/documentation/images/image007_DETRAC.jpg)
 
 ### Models
 
@@ -347,117 +347,133 @@ The search is case insensitive.
 ## Interface of the annotation tool
 
 The tool consists of:
-- ``Workspace`` — where images are shown;
-- ``Bottom panel`` (under workspace) — for navigation, filtering annotation and accessing tools' menu;
-- ``Side panel`` — contains two lists: objects (on the frame) and labels (of objects on the frame);
-- ``Bottom side panel`` — contains the main annotation functions (create, merge, group objects).
-  Here you can choose a type of shape, a label you want to annotate and a mode (annotation or interpolation)
+- ``Header`` -  pinned header used to navigate CVAT sections and account settings;
+- ``Top panel`` — contains navigation buttons, main functions and menu access;
+- ``Workspace`` — space where images are shown;
+- ``Controls sidebar`` — contains tools for navigating the image, zoom,
+  creating shapes and editing tracks (merge, split, group)
+- ``Objects sidebar`` — contains label filter, two lists: 
+  objects (on the frame) and labels (of objects on the frame) and appearance settings.
 
-![](static/documentation/images/image034.jpg)
-
-There is also:
-- ``Settings`` (F2) — the button inside ``Open Menu`` in the bottom panel. Contains different parameters
-  which can be adjusted according to the user's needs.
-- ``Context menu`` — available on right mouse button.
+![](static/documentation/images/image034_DETRAC.jpg)
 
 ### Basic navigation
 
-1.  Use arrows below to move on next/previous frame.
+1.  Use arrows below to move to the next/previous frame.
     Use the scroll bar slider to scroll through frames.
-    Almost every button is covered by a shortcut.
-    To get a hint about a shortcut, just put your mouse pointer over an UI element.
+    Almost every button has a shortcut.
+    To get a hint about a shortcut, just move your mouse pointer over an UI element.
 
     ![](static/documentation/images/image008.jpg)
 
-1.  An image can be scaled in/out using mouse's wheel. The image will be zoomed relatively your current cursor position.
-    Thus, if you point on an object, it will be under your mouse during zooming process.
+1.  To navigate the image, use the button on the controls sidebar. 
+    Another way an image can be moved/shifted is by holding the left mouse button inside 
+    an area without annotated objects. 
+    If the ``Mouse Wheel`` is pressed, then all annotated objects are ignored. Otherwise the
+    a highlighted bounding box will be moved instead of the image itself.
 
-1.  An image can be moved/shifted by holding left mouse button inside some area without annotated objects.
-    If ``Mouse Wheel`` is pressed, then all annotated objects are ignored.
-    Otherwise, a highlighted bounding box will be moved instead of the image itself.
+    ![](static/documentation/images/image136.jpg)
+
+1.  You can use the button on the sidebar controls to zoom on a region of interest. 
+    Use the button ``Fit the image`` to fit the image in the workspace.
+    You can also use the mouse wheel to scale the image 
+    (the image will be zoomed relatively to your current cursor position).
+
+    ![](static/documentation/images/image137.jpg)
 
 ### Types of shapes (basics)
+
 There are four shapes which you can annotate your images with:
-- ``box``
-- ``polygon``
-- ``polyline``
-- ``points``
-- ``auto segmentation``
+- ``Rectangle`` or ``Bounding box``
+- ``Polygon``
+- ``Polyline``
+- ``Points``
+- ``Tag``
 
 And there is how they all look like:
 
-![](static/documentation/images/image038.jpg "Box") ![](static/documentation/images/image033.jpg "Polygon")
+![](static/documentation/images/image038_DETRAC.jpg "Rectangle") ![](static/documentation/images/image033_DETRAC.jpg "Polygon")
 
-![](static/documentation/images/image009.jpg "Polyline") ![](static/documentation/images/image010.jpg "Points")
-![](static/documentation/images/gif009_DETRAC.gif "Auto Segmentation")
+![](static/documentation/images/image009_mapillary_vistas.jpg "Polyline") ![](static/documentation/images/image010_Affectnet.jpg "Points")
 
-### Annotation mode (basics)
+![](static/documentation/images/image135.jpg "Tag")
+
+``Tag`` - has no shape in the workspace, but is displayed in objects sidebar.
+
+### Shape mode (basics)
 Usage examples:
 - Create new annotations for a set of images.
 - Add/modify/delete objects for existing annotations.
 
-1.  Before starting, you need to check if ``Annotation`` is selected:
+1.  You need to select ``Rectangle`` on the controls sidebar:
 
-    ![](static/documentation/images/image082.jpg) ![](static/documentation/images/image081.jpg)
+    ![](static/documentation/images/image082.jpg)
 
-1.  Create a new annotation:
+    Before you start, select the correct `` Label`` (should be specified by you when creating the task) 
+    and `` Drawing Method`` (by 2 points or by 4 points):
 
-    -   Choose a right ``Shape`` (box etc.) and ``Label`` (was specified by you while creating the task) beforehand:
+    ![](static/documentation/images/image080.jpg) 
 
-        ![](static/documentation/images/image080.jpg) ![](static/documentation/images/image083.jpg)
+1.  Creating a new annotation in ``Shape mode``:
 
-    -   Create a bounding box by clicking on ``Create Shape`` button or ``N`` shortcut.
-        Choose opposite points. Your first bounding box is ready!
+    -   Create a separate ``Rectangle`` by clicking on ``Shape``. 
 
-        ![](static/documentation/images/image011.jpg)
+        ![](static/documentation/images/image081.jpg) 
 
-    -   It is possible to adjust boundaries and location of the bounding box using mouse.
-        Box's size is shown in the top right corner , you can check it clicking on the one point of box.
+    -   Choose the opposite points. Your first rectangle is ready!
+
+        ![](static/documentation/images/image011_DETRAC.jpg)
+
+    -   To learn about creating a rectangle using the by 4 point drawing method, ([read here](#annotation-by-rectangle-4-points)).
+
+    -   It is possible to adjust boundaries and location of the rectangle using a mouse.
+        Rectangle's size is shown in the top right corner , you can check it by clicking on any point of the shape.
         You can also undo your actions using ``Ctrl+Z`` and redo them with ``Shift+Ctrl+Z`` or ``Ctrl+Y``.
 
-1.  In the list of objects you can see the labeled car.
-    In the side panel you can perform basic operations under the object — choose attributes,
-    change its label or delete box.
+1.  You can see the ``Object card`` in the objects sidebar or open it by right-clicking on the object.
+    You can change the attributes in the details section. 
+    You can perform basic operations or delete an object by clicking on the action menu button.
 
     ![](static/documentation/images/image012.jpg)
 
-1.  The following figure is an example of fully annotated frame in ``Annotation`` mode.
+1.  The following figure is an example of a fully annotated frame with separate shapes.
 
-    ![](static/documentation/images/image013.jpg)
+    ![](static/documentation/images/image013_DETRAC.jpg)
 
-### Interpolation mode (basics)
+    Read more in the section [shape mode (advanced)](#shape-mode-advanced).
+
+### Track mode (basics)
 Usage examples:
 - Create new annotations for a sequence of frames.
 - Add/modify/delete objects for existing annotations.
-- Edit tracks, merge a lot of bounding boxes into one track.
+- Edit tracks, merge several rectangles into one track.
 
-1.  Before starting, you have to be sure that ``Interpolation`` is selected.
+1.  Like in the ``Shape mode``, you need to select a ``Rectangle`` on the sidebar, 
+    in the appearing form, select the desired ``Label`` and the ``Drawing method``.
 
-    ![](static/documentation/images/image014.jpg)
+    ![](static/documentation/images/image083.jpg) 
 
-1.  Create a track for an object (look at the selected car as an example):
-    - Annotate a bounding box on the first frame for the object.
-    - In ``Interpolation`` mode the bounding box will be interpolated on next frames automatically.
+1.  Creating a track for an object (look at the selected car as an example):
+    - Create a ``Rectangle`` in ``Track mode`` by clicking on ``Track``.
 
-    ![](static/documentation/images/image015_DETRAC.jpg)
+      ![](static/documentation/images/image014.jpg)
 
-1.  If the object starts to change its position, you need to modify bounding
-    boxes where it happens. It isn't necessary to change bounding boxes on each
-    frame. It is enough to update several key frames and frames between them
-    will be interpolated automatically. See an example below:
-    -   The car starts moving on frame #630. Let's mark the frame as a key frame.
-        You can press ``K`` for that or push ``star`` button (see the screenshot below)
+    - In ``Track mode`` the rectangle will be automatically interpolated on the next frames.
+    - The cyclist starts moving on frame #2270. Let's mark the frame as a key frame.
+      You can press ``K`` for that or click the ``star`` button (see the screenshot below).
 
         ![](static/documentation/images/image016.jpg)
 
-    -   Let's jump 30 frames forward and adjust boundaries of the object.
+    - If the object starts to change its position, you need to modify the rectangle where it happens. 
+      It isn't necessary to change the rectangle on each frame, simply update several keyframes 
+      and the frames between them will be interpolated automatically.
+    - Let's jump 30 frames forward and adjust the boundaries of the object. See an example below:
 
         ![](static/documentation/images/image017_DETRAC.jpg)
 
-    -   After that, bounding boxes of the object between 630 and 660 frames
-        will be changed automatically. For example, frame #645 looks like on the figure below:
+    -   After that the rectangle of the object will be changed automatically on frames 2270 to 2300:
 
-        ![](static/documentation/images/image018.jpg)
+        ![](static/documentation/images/gif019_DETRAC.gif)
 
 1.  When the annotated object disappears or becomes too small, you need to
     finish the track. You have to choose ``Outside Property``, shortcut ``O``.
@@ -465,71 +481,68 @@ Usage examples:
     ![](static/documentation/images/image019.jpg)
 
 1.  If the object isn't visible on a couple of frames and then appears again,
-    you can use ``Merge Tracks`` feature to merge several individual tracks
+    you can use the ``Merge`` feature to merge several individual tracks
     into one.
 
     ![](static/documentation/images/image020.jpg)
 
-    -   Let's create a track for the bus.
+    -   Create tracks for moments when the cyclist is visible:
 
-        ![](static/documentation/images/gif001.gif)
+        ![](static/documentation/images/gif001_DETRAC.gif)
 
-        After that, you should create a track when it appears again on the sequence of frames.
+    -   Click ``Merge`` button or press key ``M`` and click on any rectangle of the first track 
+        and on any rectangle of the second track and so on:
 
-        ![](static/documentation/images/gif002.gif)
+        ![](static/documentation/images/image162_DETRAC.jpg)
 
-    -   Press ``Merge Tracks`` button and click on any bounding box of the
-        first track and on any bounding box of the second track.
+    -   Click ``Merge`` button or press ``M`` to apply changes.
 
-        ![](static/documentation/images/image021.jpg)
-
-    -   Press ``Apply Merge`` button to apply changes.
-
-        ![](static/documentation/images/image022.jpg)
+        ![](static/documentation/images/image020.jpg)
 
     -   The final annotated sequence of frames in ``Interpolation`` mode can
         look like the clip below:
 
-        ![](static/documentation/images/gif003.gif)
+        ![](static/documentation/images/gif003_DETRAC.gif)
+
+        Read more in the section [track mode (advanced)](#track-mode-advanced).
 
 ### Attribute annotation mode (basics)
 
--   In this mode you can edit attributes with fast navigation between
-    objects and frames using keyboard. Press ``Shift+Enter`` shortcut
-    to enter the mode. After that, you can change attributes using a keyboard.
+-   In this mode you can edit attributes with fast navigation between objects and frames using a keyboard. 
+    Open the drop-down list in the top panel and select Attribute annotation Mode.
 
-    ![](static/documentation/images/image023.jpg)
+    ![](static/documentation/images/image023_Affectnet.jpg)
 
--   The active attribute will be red. It is ``gender`` in this case. Look at
-    the bottom side panel to see all possible shortcuts for changing the
-    attribute. Press ``2`` key on your keyboard to assign ``female`` value for
-    the attribute.
+-   In this mode objects panel change to a special panel :
 
-    ![](static/documentation/images/image024.jpg) ![](static/documentation/images/image025.jpg)
+    ![](static/documentation/images/image026.jpg)
 
--   Press ``Up Arrow``/``Down Arrow`` on your keyboard to go to next/previous
-    attribute. In this case, after pressing ``Down Arrow`` you will be able to
-    edit ``Age`` attribute.
+-   The active attribute will be red. In this case it is ``gender`` . Look at the bottom side panel to see all possible
+    shortcuts for changing the attribute. Press key ``2`` on your keyboard to assign a value (female) for the attribute
+    or select from the drop-down list.
 
-    ![](static/documentation/images/image026.jpg) ![](static/documentation/images/image027.jpg)
+    ![](static/documentation/images/image024_Affectnet.jpg)
+    
+-   Press ``Up Arrow``/``Down Arrow`` on your keyboard or click the buttons in the UI to go to the next/previous
+    attribute. In this case, after pressing ``Down Arrow`` you will be able to edit the ``Age`` attribute.
 
--   Use ``Right Arrow``/``Left Arrow`` keys to move on previous/next image with annotation.
+    ![](static/documentation/images/image025_Affectnet.jpg)
+
+-   Use ``Right Arrow``/``Left Arrow`` keys to move to the previous/next image with annotation.
+
+To see all the hot keys available in the attribute annotation mode, press ``F2``. 
+Read more in the section [attribute annotation mode (advanced)](#attribute-annotation-mode-advanced).
 
 ### Downloading annotations
 
-1.  To download the latest annotations, you have to save all changes first.
-    To do this, click ``Open Menu`` button. 
-
-1.  After that, press ``Save Work`` button. There is ``Ctrl+S``
-    shortcut to save annotations quickly.
+1.  To download the latest annotations, you have to save all changes first. 
+    click the ``Save`` button. There is a ``Ctrl+S`` shortcut to save annotations quickly.
+1.  After that, сlick the ``Menu`` button. 
+1.  Press the ``Dump Annotation`` button.
 
     ![](static/documentation/images/image028.jpg)
 
-1.  After that, press ``Dump Annotation`` button.
-
-    ![](static/documentation/images/image118.jpg)
-
-1.  Choose format dump annotation file. Dump annotation are available in several formats:
+1.  Choose the format dump of the annotation file. Several formats are available:
     - [CVAT XML 1.1 for video](/cvat/apps/documentation/xml_format.md#interpolation)
     is highlighted if a task has the interpolation mode
     - [CVAT XML 1.1 for images](/cvat/apps/documentation/xml_format.md#annotation)
@@ -540,9 +553,11 @@ Usage examples:
     - [PASCAL VOC ZIP 1.1](http://host.robots.ox.ac.uk/pascal/VOC/)
     - [YOLO ZIP 1.1](https://pjreddie.com/darknet/yolo/)
     - [COCO JSON 1.0](http://cocodataset.org/#format-data)
-    - ``MASK ZIP 1.0`` — archive contains a mask of each frame in the png format and a text file with
+    - ``MASK ZIP 1.1`` — archive contains a mask of each frame in the png format and a text file with
     the value of each color
     - [TFRecord ZIP 1.0](https://www.tensorflow.org/tutorials/load_data/tf_records) 
+    - [MOT ZIP 1.1](https://motchallenge.net/)
+    - [LabelMe ZIP 3.0 for image](http://labelme.csail.mit.edu/Release3.0/)
 
 ### Task synchronization with a repository
 
@@ -564,21 +579,9 @@ Usage examples:
 
 ### Vocabulary
 
-**Bounding box** is an area which defines boundaries of an object. To specify
-it, you need to define two opposite corners.
+**Label** is a type of an annotated object (e.g. person, car, vehicle, etc.)
 
-**Tight bounding box** is a bounding box where margin between the object inside
-and boundaries of the box is absent. This type of bounding box is used in most
-tasks by default, but precision completely depends on an annotation task.
-
-| Bounding box                                  | Tight bounding box                            |
-| ------------                                  | :----------------:                            |
-| ![](static/documentation/images/image031.jpg) | ![](static/documentation/images/image030.jpg) |
-
----
-**Label** is a type of an annotated object (e.g. person, car, face, etc.)
-
-![](static/documentation/images/image032.jpg)
+![](static/documentation/images/image032_DETRAC.jpg)
 
 ---
 
@@ -594,9 +597,10 @@ quality, etc.). There are two types of attributes:
     ![](static/documentation/images/image072.jpg)
 
 ---
-**Track** is a set of shapes on different frames which corresponds to one object. Tracks are created in ``Interpolation mode``
+**Track** is a set of shapes on different frames which corresponds to one object. 
+Tracks are created in ``Track mode``
 
-![](static/documentation/images/gif004.gif)
+![](static/documentation/images/gif003_DETRAC.gif)
 
 ---
 **Annotation** is a set of shapes and tracks. There are several types of annotations:

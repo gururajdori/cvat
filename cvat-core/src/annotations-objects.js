@@ -69,6 +69,12 @@
                     `Points must have at least 1 points, but got ${points.length / 2}`,
                 );
             }
+        } else if (shapeType === ObjectShape.CUBOID) {
+            if (points.length / 2 !== 8) {
+                throw new DataError(
+                    `Points must have exact 8 points, but got ${points.length / 2}`,
+                );
+            }
         } else {
             throw new ArgumentError(
                 `Unknown value of shapeType has been recieved ${shapeType}`,
@@ -107,6 +113,35 @@
 
         const area = (xmax - xmin) * (ymax - ymin);
         return area >= MIN_SHAPE_AREA;
+    }
+
+    function fitPoints(shapeType, points, maxX, maxY) {
+        const fittedPoints = [];
+
+        for (let i = 0; i < points.length - 1; i += 2) {
+            const x = points[i];
+            const y = points[i + 1];
+
+            checkObjectType('coordinate', x, 'number', null);
+            checkObjectType('coordinate', y, 'number', null);
+
+            fittedPoints.push(
+                Math.clamp(x, 0, maxX),
+                Math.clamp(y, 0, maxY),
+            );
+        }
+
+        return shapeType === ObjectShape.CUBOID ? points : fittedPoints;
+    }
+
+    function checkOutside(points, width, height) {
+        let inside = false;
+        for (let i = 0; i < points.length - 1; i += 2) {
+            const [x, y] = points.slice(i);
+            inside = inside || (x >= 0 && x <= width && y >= 0 && y <= height);
+        }
+
+        return !inside;
     }
 
     function validateAttributeValue(value, attr) {
@@ -184,8 +219,10 @@
 
             this.history.do(HistoryActions.CHANGED_LOCK, () => {
                 this.lock = undoLock;
+                this.updated = Date.now();
             }, () => {
                 this.lock = redoLock;
+                this.updated = Date.now();
             }, [this.clientID], frame);
 
             this.lock = lock;
@@ -197,8 +234,10 @@
 
             this.history.do(HistoryActions.CHANGED_COLOR, () => {
                 this.color = undoColor;
+                this.updated = Date.now();
             }, () => {
                 this.color = redoColor;
+                this.updated = Date.now();
             }, [this.clientID], frame);
 
             this.color = color;
@@ -210,8 +249,10 @@
 
             this.history.do(HistoryActions.CHANGED_HIDDEN, () => {
                 this.hidden = undoHidden;
+                this.updated = Date.now();
             }, () => {
                 this.hidden = redoHidden;
+                this.updated = Date.now();
             }, [this.clientID], frame);
 
             this.hidden = hidden;
@@ -229,9 +270,11 @@
             this.history.do(HistoryActions.CHANGED_LABEL, () => {
                 this.label = undoLabel;
                 this.attributes = undoAttributes;
+                this.updated = Date.now();
             }, () => {
                 this.label = redoLabel;
                 this.attributes = redoAttributes;
+                this.updated = Date.now();
             }, [this.clientID], frame);
         }
 
@@ -246,8 +289,10 @@
 
             this.history.do(HistoryActions.CHANGED_ATTRIBUTES, () => {
                 this.attributes = undoAttributes;
+                this.updated = Date.now();
             }, () => {
                 this.attributes = redoAttributes;
+                this.updated = Date.now();
             }, [this.clientID], frame);
         }
 
@@ -286,20 +331,9 @@
                 checkNumberOfPoints(this.shapeType, data.points);
                 // cut points
                 const { width, height } = this.frameMeta[frame];
-                for (let i = 0; i < data.points.length - 1; i += 2) {
-                    const x = data.points[i];
-                    const y = data.points[i + 1];
+                fittedPoints = fitPoints(this.shapeType, data.points, width, height);
 
-                    checkObjectType('coordinate', x, 'number', null);
-                    checkObjectType('coordinate', y, 'number', null);
-
-                    fittedPoints.push(
-                        Math.clamp(x, 0, width),
-                        Math.clamp(y, 0, height),
-                    );
-                }
-
-                if (!checkShapeArea(this.shapeType, fittedPoints)) {
+                if ((!checkShapeArea(this.shapeType, fittedPoints)) || checkOutside(fittedPoints, width, height)) {
                     fittedPoints = [];
                 }
             }
@@ -361,7 +395,7 @@
         updateTimestamp(updated) {
             const anyChanges = updated.label || updated.attributes || updated.points
                 || updated.outside || updated.occluded || updated.keyframe
-                || updated.zOrder;
+                || updated.zOrder || updated.hidden || updated.lock || updated.pinned;
 
             if (anyChanges) {
                 this.updated = Date.now();
@@ -373,9 +407,12 @@
                 this.removed = true;
 
                 this.history.do(HistoryActions.REMOVED_OBJECT, () => {
+                    this.serverID = undefined;
                     this.removed = false;
+                    this.updated = Date.now();
                 }, () => {
                     this.removed = true;
+                    this.updated = Date.now();
                 }, [this.clientID], frame);
             }
 
@@ -398,8 +435,10 @@
 
             this.history.do(HistoryActions.CHANGED_PINNED, () => {
                 this.pinned = undoPinned;
+                this.updated = Date.now();
             }, () => {
                 this.pinned = redoPinned;
+                this.updated = Date.now();
             }, [this.clientID], frame);
 
             this.pinned = pinned;
@@ -489,8 +528,10 @@
 
             this.history.do(HistoryActions.CHANGED_POINTS, () => {
                 this.points = undoPoints;
+                this.updated = Date.now();
             }, () => {
                 this.points = redoPoints;
+                this.updated = Date.now();
             }, [this.clientID], frame);
 
             this.points = points;
@@ -502,8 +543,10 @@
 
             this.history.do(HistoryActions.CHANGED_OCCLUDED, () => {
                 this.occluded = undoOccluded;
+                this.updated = Date.now();
             }, () => {
                 this.occluded = redoOccluded;
+                this.updated = Date.now();
             }, [this.clientID], frame);
 
             this.occluded = occluded;
@@ -515,8 +558,10 @@
 
             this.history.do(HistoryActions.CHANGED_ZORDER, () => {
                 this.zOrder = undoZOrder;
+                this.updated = Date.now();
             }, () => {
                 this.zOrder = redoZOrder;
+                this.updated = Date.now();
             }, [this.clientID], frame);
 
             this.zOrder = zOrder;
@@ -777,12 +822,14 @@
                 for (const mutable of undoAttributes.mutable) {
                     this.shapes[mutable.frame].attributes = mutable.attributes;
                 }
+                this.updated = Date.now();
             }, () => {
                 this.label = redoLabel;
                 this.attributes = redoAttributes.unmutable;
                 for (const mutable of redoAttributes.mutable) {
                     this.shapes[mutable.frame].attributes = mutable.attributes;
                 }
+                this.updated = Date.now();
             }, [this.clientID], frame);
         }
 
@@ -853,11 +900,13 @@
                 } else if (redoShape) {
                     delete this.shapes[frame];
                 }
+                this.updated = Date.now();
             }, () => {
                 this.attributes = redoAttributes;
                 if (redoShape) {
                     this.shapes[frame] = redoShape;
                 }
+                this.updated = Date.now();
             }, [this.clientID], frame);
         }
 
@@ -868,12 +917,14 @@
                 } else {
                     this.shapes[frame] = undoShape;
                 }
+                this.updated = Date.now();
             }, () => {
                 if (!redoShape) {
                     delete this.shapes[frame];
                 } else {
                     this.shapes[frame] = redoShape;
                 }
+                this.updated = Date.now();
             }, [this.clientID], frame);
         }
 
@@ -1351,6 +1402,127 @@
         }
     }
 
+    class CuboidShape extends PolyShape {
+        constructor(data, clientID, color, injection) {
+            super(data, clientID, color, injection);
+            this.shapeType = ObjectShape.CUBOID;
+            this.pinned = false;
+            checkNumberOfPoints(this.shapeType, this.points);
+        }
+
+        static makeHull(geoPoints) {
+            // Returns the convex hull, assuming that each points[i] <= points[i + 1].
+            function makeHullPresorted(points) {
+                if (points.length <= 1) return points.slice();
+
+                // Andrew's monotone chain algorithm. Positive y coordinates correspond to 'up'
+                // as per the mathematical convention, instead of 'down' as per the computer
+                // graphics convention. This doesn't affect the correctness of the result.
+
+                const upperHull = [];
+                for (let i = 0; i < points.length; i += 1) {
+                    const p = points[`${i}`];
+                    while (upperHull.length >= 2) {
+                        const q = upperHull[upperHull.length - 1];
+                        const r = upperHull[upperHull.length - 2];
+                        if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x)) upperHull.pop();
+                        else break;
+                    }
+                    upperHull.push(p);
+                }
+                upperHull.pop();
+
+                const lowerHull = [];
+                for (let i = points.length - 1; i >= 0; i -= 1) {
+                    const p = points[`${i}`];
+                    while (lowerHull.length >= 2) {
+                        const q = lowerHull[lowerHull.length - 1];
+                        const r = lowerHull[lowerHull.length - 2];
+                        if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x)) lowerHull.pop();
+                        else break;
+                    }
+                    lowerHull.push(p);
+                }
+                lowerHull.pop();
+
+                if (upperHull.length
+                    === 1 && lowerHull.length
+                    === 1 && upperHull[0].x
+                    === lowerHull[0].x && upperHull[0].y
+                    === lowerHull[0].y) return upperHull;
+                return upperHull.concat(lowerHull);
+            }
+
+            function POINT_COMPARATOR(a, b) {
+                if (a.x < b.x) return -1;
+                if (a.x > b.x) return +1;
+                if (a.y < b.y) return -1;
+                if (a.y > b.y) return +1;
+                return 0;
+            }
+
+            const newPoints = geoPoints.slice();
+            newPoints.sort(POINT_COMPARATOR);
+            return makeHullPresorted(newPoints);
+        }
+
+        static contain(points, x, y) {
+            function isLeft(P0, P1, P2) {
+                return ((P1.x - P0.x) * (P2.y - P0.y) - (P2.x - P0.x) * (P1.y - P0.y));
+            }
+            points = CuboidShape.makeHull(points);
+            let wn = 0;
+            for (let i = 0; i < points.length; i += 1) {
+                const p1 = points[`${i}`];
+                const p2 = points[i + 1] || points[0];
+
+                if (p1.y <= y) {
+                    if (p2.y > y) {
+                        if (isLeft(p1, p2, { x, y }) > 0) {
+                            wn += 1;
+                        }
+                    }
+                } else if (p2.y < y) {
+                    if (isLeft(p1, p2, { x, y }) < 0) {
+                        wn -= 1;
+                    }
+                }
+            }
+
+            return wn !== 0;
+        }
+
+        static distance(actualPoints, x, y) {
+            const points = [];
+
+            for (let i = 0; i < 16; i += 2) {
+                points.push({ x: actualPoints[i], y: actualPoints[i + 1] });
+            }
+
+            if (!CuboidShape.contain(points, x, y)) return null;
+
+            let minDistance = Number.MAX_SAFE_INTEGER;
+            for (let i = 0; i < points.length; i += 1) {
+                const p1 = points[`${i}`];
+                const p2 = points[i + 1] || points[0];
+
+                // perpendicular from point to straight length
+                const distance = (Math.abs((p2.y - p1.y) * x
+                    - (p2.x - p1.x) * y + p2.x * p1.y - p2.y * p1.x))
+                    / Math.sqrt(Math.pow(p2.y - p1.y, 2) + Math.pow(p2.x - p1.x, 2));
+
+                // check if perpendicular belongs to the straight segment
+                const a = Math.pow(p1.x - x, 2) + Math.pow(p1.y - y, 2);
+                const b = Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2);
+                const c = Math.pow(p2.x - x, 2) + Math.pow(p2.y - y, 2);
+                if (distance < minDistance && (a + b - c) >= 0 && (c + b - a) >= 0) {
+                    minDistance = distance;
+                }
+            }
+            return minDistance;
+        }
+    }
+
     class RectangleTrack extends Track {
         constructor(data, clientID, color, injection) {
             super(data, clientID, color, injection);
@@ -1362,20 +1534,15 @@
         }
 
         interpolatePosition(leftPosition, rightPosition, offset) {
-            const positionOffset = [
-                rightPosition.points[0] - leftPosition.points[0],
-                rightPosition.points[1] - leftPosition.points[1],
-                rightPosition.points[2] - leftPosition.points[2],
-                rightPosition.points[3] - leftPosition.points[3],
-            ];
 
-            return { // xtl, ytl, xbr, ybr
-                points: [
-                    leftPosition.points[0] + positionOffset[0] * offset,
-                    leftPosition.points[1] + positionOffset[1] * offset,
-                    leftPosition.points[2] + positionOffset[2] * offset,
-                    leftPosition.points[3] + positionOffset[3] * offset,
-                ],
+            const positionOffset = leftPosition.points.map((point, index) => (
+                rightPosition.points[index] - point
+            ))
+
+            return {
+                points: leftPosition.points.map((point ,index) => (
+                    point + positionOffset[index] * offset
+                )),
                 occluded: leftPosition.occluded,
                 outside: leftPosition.outside,
                 zOrder: leftPosition.zOrder,
@@ -1800,20 +1967,35 @@
         }
     }
 
+    class CuboidTrack extends PolyTrack {
+        constructor(data, clientID, color, injection) {
+            super(data, clientID, color, injection);
+            this.shapeType = ObjectShape.CUBOID;
+            this.pinned = false;
+            for (const shape of Object.values(this.shapes)) {
+                checkNumberOfPoints(this.shapeType, shape.points);
+            }
+        }
+    }
+
     RectangleTrack.distance = RectangleShape.distance;
     PolygonTrack.distance = PolygonShape.distance;
     PolylineTrack.distance = PolylineShape.distance;
     PointsTrack.distance = PointsShape.distance;
+    CuboidTrack.distance = CuboidShape.distance;
+    CuboidTrack.interpolatePosition = RectangleTrack.interpolatePosition;
 
     module.exports = {
         RectangleShape,
         PolygonShape,
         PolylineShape,
         PointsShape,
+        CuboidShape,
         RectangleTrack,
         PolygonTrack,
         PolylineTrack,
         PointsTrack,
+        CuboidTrack,
         Track,
         Shape,
         Tag,
