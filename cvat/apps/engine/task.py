@@ -217,18 +217,17 @@ def _download_data(urls, upload_dir, task_data):
         job.meta['status'] = '{} is being downloaded..'.format(url)
         job.save_meta()
 
-        if task_data['s3_download']:
-            task_data.access_key
-            task_data.secreate_key
-
+        if task_data.s3_download:
+            s3 = boto3.client(
+                's3',
+                aws_access_key_id=task_data.access_key,,
+                aws_secret_access_key=task_data.secreate_key,
+            )
             o = urlparse(url, allow_fragments=False)
             bucket_name = o.netloc
             path = o.path
-
-            s3 = boto3.resource('s3', )
             try:
-                s3.Bucket(bucket_name).download_file(
-                    path, os.path.join(upload_dir, name))
+                s3.download_file(bucket_name, path, os.path.join(upload_dir, name))
             except botocore.exceptions.ClientError as e:
                 if e.response['Error']['Code'] == "404":
                     print("The object does not exist.")
@@ -253,6 +252,7 @@ def _create_thread(tid, data):
     slogger.glob.info("create task #{}".format(tid))
 
     db_task = models.Task.objects.select_for_update().get(pk=tid)
+    db_entry = models.Task.objects.get(id=tid)
     db_data = db_task.data
     if db_task.data.size != 0:
         raise NotImplementedError("Adding more data is not implemented")
@@ -261,7 +261,7 @@ def _create_thread(tid, data):
 
     if data['remote_files']:
         data['remote_files'] = _download_data(
-            data['remote_files'], upload_dir, db_task)
+            data['remote_files'], upload_dir, db_entry)
 
     meta_info_file = []
     media = _count_files(data, meta_info_file)
