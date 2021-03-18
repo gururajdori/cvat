@@ -291,7 +291,7 @@ class DataSerializer(serializers.ModelSerializer):
         model = models.Data
         fields = ('chunk_size', 'size', 'image_quality', 'start_frame', 'stop_frame', 'frame_filter',
                   'compressed_chunk_type', 'original_chunk_type', 'client_files', 'server_files', 'remote_files', 'use_zip_chunks',
-                  'use_cache', 'copy_data')
+                  'use_cache', 'copy_data', 'access_key', 'secreate_key')
 
     # pylint: disable=no-self-use
     def validate_frame_filter(self, value):

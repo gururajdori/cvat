@@ -88,6 +88,8 @@ class Data(models.Model):
     chunk_size = models.PositiveIntegerField(null=True)
     size = models.PositiveIntegerField(default=0)
     image_quality = models.PositiveSmallIntegerField(default=50)
+    access_key = models.CharField(max_length=80)
+    secreate_key = models.CharField(max_length=80)
     start_frame = models.PositiveIntegerField(default=0)
     stop_frame = models.PositiveIntegerField(default=0)
     frame_filter = models.CharField(max_length=256, default="", blank=True)
@@ -234,10 +236,6 @@ class Task(models.Model):
         max_length=2, choices=DimensionType.choices(), default=DimensionType.DIM_2D)
     subset = models.CharField(max_length=64, blank=True, default="")
 
-    # Dori Fields needed for storing information
-    access_key = models.CharField(max_length=80)
-    secreate_key = models.CharField(max_length=80)
-    s3_download = models.BooleanField(default=True)
 
     # Extend default permission model
     class Meta:

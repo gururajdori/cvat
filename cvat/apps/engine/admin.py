@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from django.contrib import admin
-from .models import Task, Segment, Job, Label, AttributeSpec, Project
+from .models import Task, Segment, Job, Label, AttributeSpec, Project, Data
 
 class JobInline(admin.TabularInline):
     model = Job
@@ -84,8 +84,14 @@ class TaskAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
+class DataAdmin(admin.ModelAdmin):
+    list_display = ('chunk_size', 'image_quality', 'access_key', 'secreate_key', 'start_frame', 'stop_frame')
+
+    def has_add_permission(self, _request):
+        return False
 
 admin.site.register(Task, TaskAdmin)
 admin.site.register(Segment, SegmentAdmin)
 admin.site.register(Label, LabelAdmin)
 admin.site.register(Project, ProjectAdmin)
+admin.site.register(Data, DataAdmin)

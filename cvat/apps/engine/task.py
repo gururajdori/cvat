@@ -12,6 +12,7 @@ from re import findall
 from traceback import print_exception
 from urllib import parse as urlparse
 from urllib import request as urlrequest
+from urllib.parse import urlparse as botoparse
 
 import boto3
 import botocore
@@ -205,7 +206,7 @@ def _validate_data(counter, meta_info_file=None):
     return counter, task_modes[0]
 
 
-def _download_data(urls, upload_dir, task_data):
+def _download_data(urls, upload_dir, access_key=None, secreate_key=None):
     job = rq.get_current_job()
     local_files = {}
     for url in urls:
@@ -216,21 +217,22 @@ def _download_data(urls, upload_dir, task_data):
         slogger.glob.info("Downloading: {}".format(url))
         job.meta['status'] = '{} is being downloaded..'.format(url)
         job.save_meta()
+        if access_key and secreate_key:
+            s3_client = boto3.client('s3',
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secreate_key)
 
-        if task_data.s3_download:
-            s3 = boto3.client(
-                's3',
-                aws_access_key_id=task_data.access_key,,
-                aws_secret_access_key=task_data.secreate_key,
-            )
-            o = urlparse(url, allow_fragments=False)
+            o = botoparse(url, allow_fragments=False)
             bucket_name = o.netloc
-            path = o.path
+            file_path = o.path[1:]
+
             try:
-                s3.download_file(bucket_name, path, os.path.join(upload_dir, name))
+                with open(os.path.join(upload_dir, name), 'wb') as f:
+                    s3_client.download_fileobj(bucket_name, file_path, f)
             except botocore.exceptions.ClientError as e:
                 if e.response['Error']['Code'] == "404":
-                    print("The object does not exist.")
+                    slogger.glob.info("S3 object does not exist.")
+                    raise Exception("S3 object does not exist. " + url)
                 else:
                     raise Exception("Failed to download " + url)
         else:
@@ -252,16 +254,17 @@ def _create_thread(tid, data):
     slogger.glob.info("create task #{}".format(tid))
 
     db_task = models.Task.objects.select_for_update().get(pk=tid)
-    db_entry = models.Task.objects.get(id=tid)
     db_data = db_task.data
     if db_task.data.size != 0:
         raise NotImplementedError("Adding more data is not implemented")
 
     upload_dir = db_data.get_upload_dirname()
+    access_key = data['access_key'] if data['access_key'] else None
+    secreate_key = data['secreate_key'] if data['secreate_key'] else None
 
     if data['remote_files']:
         data['remote_files'] = _download_data(
-            data['remote_files'], upload_dir, db_entry)
+            data['remote_files'], upload_dir, access_key, secreate_key)
 
     meta_info_file = []
     media = _count_files(data, meta_info_file)

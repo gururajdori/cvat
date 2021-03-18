@@ -140,7 +140,8 @@ class ArchiveReader(DirectoryReader):
     def __init__(self, source_path, step=1, start=0, stop=None):
         self._archive_source = source_path[0]
         extract_dir = source_path[1] if len(source_path) > 1 else os.path.dirname(source_path[0])
-        Archive(self._archive_source).extractall(extract_dir)
+        # Archive(self._archive_source).extractall(extract_dir)
+        shutil.unpack_archive(self._archive_source, extract_dir)
         if extract_dir == os.path.dirname(source_path[0]):
             os.remove(self._archive_source)
         super().__init__(
