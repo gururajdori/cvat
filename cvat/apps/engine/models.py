@@ -12,12 +12,14 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
 
+
 class SafeCharField(models.CharField):
     def get_prep_value(self, value):
         value = super().get_prep_value(value)
         if value:
             return value[:self.max_length]
         return value
+
 
 class DimensionType(str, Enum):
     DIM_3D = '3d'
@@ -29,6 +31,7 @@ class DimensionType(str, Enum):
 
     def __str__(self):
         return self.value
+
 
 class StatusChoice(str, Enum):
     ANNOTATION = 'annotation'
@@ -42,6 +45,7 @@ class StatusChoice(str, Enum):
     def __str__(self):
         return self.value
 
+
 class DataChoice(str, Enum):
     VIDEO = 'video'
     IMAGESET = 'imageset'
@@ -54,6 +58,7 @@ class DataChoice(str, Enum):
     def __str__(self):
         return self.value
 
+
 class StorageMethodChoice(str, Enum):
     CACHE = 'cache'
     FILE_SYSTEM = 'file_system'
@@ -64,6 +69,7 @@ class StorageMethodChoice(str, Enum):
 
     def __str__(self):
         return self.value
+
 
 class StorageChoice(str, Enum):
     #AWS_S3 = 'aws_s3_bucket'
@@ -77,6 +83,7 @@ class StorageChoice(str, Enum):
     def __str__(self):
         return self.value
 
+
 class Data(models.Model):
     chunk_size = models.PositiveIntegerField(null=True)
     size = models.PositiveIntegerField(default=0)
@@ -85,11 +92,13 @@ class Data(models.Model):
     stop_frame = models.PositiveIntegerField(default=0)
     frame_filter = models.CharField(max_length=256, default="", blank=True)
     compressed_chunk_type = models.CharField(max_length=32, choices=DataChoice.choices(),
-        default=DataChoice.IMAGESET)
+                                             default=DataChoice.IMAGESET)
     original_chunk_type = models.CharField(max_length=32, choices=DataChoice.choices(),
-        default=DataChoice.IMAGESET)
-    storage_method = models.CharField(max_length=15, choices=StorageMethodChoice.choices(), default=StorageMethodChoice.FILE_SYSTEM)
-    storage = models.CharField(max_length=15, choices=StorageChoice.choices(), default=StorageChoice.LOCAL)
+                                           default=DataChoice.IMAGESET)
+    storage_method = models.CharField(max_length=15, choices=StorageMethodChoice.choices(
+    ), default=StorageMethodChoice.FILE_SYSTEM)
+    storage = models.CharField(
+        max_length=15, choices=StorageChoice.choices(), default=StorageChoice.LOCAL)
 
     class Meta:
         default_permissions = ()
@@ -129,11 +138,11 @@ class Data(models.Model):
 
     def get_original_chunk_path(self, chunk_number):
         return os.path.join(self.get_original_cache_dirname(),
-            self._get_original_chunk_name(chunk_number))
+                            self._get_original_chunk_name(chunk_number))
 
     def get_compressed_chunk_path(self, chunk_number):
         return os.path.join(self.get_compressed_cache_dirname(),
-            self._get_compressed_chunk_name(chunk_number))
+                            self._get_compressed_chunk_name(chunk_number))
 
     def get_preview_path(self):
         return os.path.join(self.get_data_dirname(), 'preview.jpeg')
@@ -144,8 +153,10 @@ class Data(models.Model):
     def get_dummy_chunk_path(self, chunk_number):
         return os.path.join(self.get_upload_dirname(), 'dummy_{}.txt'.format(chunk_number))
 
+
 class Video(models.Model):
-    data = models.OneToOneField(Data, on_delete=models.CASCADE, related_name="video", null=True)
+    data = models.OneToOneField(
+        Data, on_delete=models.CASCADE, related_name="video", null=True)
     path = models.CharField(max_length=1024, default='')
     width = models.PositiveIntegerField()
     height = models.PositiveIntegerField()
@@ -153,8 +164,10 @@ class Video(models.Model):
     class Meta:
         default_permissions = ()
 
+
 class Image(models.Model):
-    data = models.ForeignKey(Data, on_delete=models.CASCADE, related_name="images", null=True)
+    data = models.ForeignKey(
+        Data, on_delete=models.CASCADE, related_name="images", null=True)
     path = models.CharField(max_length=1024, default='')
     frame = models.PositiveIntegerField()
     width = models.PositiveIntegerField()
@@ -163,17 +176,18 @@ class Image(models.Model):
     class Meta:
         default_permissions = ()
 
+
 class Project(models.Model):
     name = SafeCharField(max_length=256)
     owner = models.ForeignKey(User, null=True, blank=True,
-        on_delete=models.SET_NULL, related_name="+")
+                              on_delete=models.SET_NULL, related_name="+")
     assignee = models.ForeignKey(User, null=True,  blank=True,
-        on_delete=models.SET_NULL, related_name="+")
+                                 on_delete=models.SET_NULL, related_name="+")
     bug_tracker = models.CharField(max_length=2000, blank=True, default="")
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=32, choices=StatusChoice.choices(),
-        default=StatusChoice.ANNOTATION)
+                              default=StatusChoice.ANNOTATION)
 
     def get_project_dirname(self):
         return os.path.join(settings.PROJECTS_ROOT, str(self.id))
@@ -194,16 +208,18 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+
 class Task(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
-        null=True, blank=True, related_name="tasks",
-        related_query_name="task")
+                                null=True, blank=True, related_name="tasks",
+                                related_query_name="task")
     name = SafeCharField(max_length=256)
     mode = models.CharField(max_length=32)
     owner = models.ForeignKey(User, null=True, blank=True,
-        on_delete=models.SET_NULL, related_name="owners")
+                              on_delete=models.SET_NULL, related_name="owners")
     assignee = models.ForeignKey(User, null=True,  blank=True,
-        on_delete=models.SET_NULL, related_name="assignees")
+                                 on_delete=models.SET_NULL,
+                                 related_name="assignees")
     bug_tracker = models.CharField(max_length=2000, blank=True, default="")
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
@@ -211,10 +227,17 @@ class Task(models.Model):
     # Zero means that there are no limits (default)
     segment_size = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=32, choices=StatusChoice.choices(),
-        default=StatusChoice.ANNOTATION)
-    data = models.ForeignKey(Data, on_delete=models.CASCADE, null=True, related_name="tasks")
-    dimension = models.CharField(max_length=2, choices=DimensionType.choices(), default=DimensionType.DIM_2D)
+                              default=StatusChoice.ANNOTATION)
+    data = models.ForeignKey(
+        Data, on_delete=models.CASCADE, null=True, related_name="tasks")
+    dimension = models.CharField(
+        max_length=2, choices=DimensionType.choices(), default=DimensionType.DIM_2D)
     subset = models.CharField(max_length=64, blank=True, default="")
+
+    # Dori Fields needed for storing information
+    access_key = models.CharField(max_length=80)
+    secreate_key = models.CharField(max_length=80)
+    s3_download = models.BooleanField(default=True)
 
     # Extend default permission model
     class Meta:
@@ -240,39 +263,52 @@ class Task(models.Model):
 
 # Redefined a couple of operation for FileSystemStorage to avoid renaming
 # or other side effects.
+
+
 class MyFileSystemStorage(FileSystemStorage):
     def get_valid_name(self, name):
         return name
 
     def get_available_name(self, name, max_length=None):
         if self.exists(name) or (max_length and len(name) > max_length):
-            raise IOError('`{}` file already exists or its name is too long'.format(name))
+            raise IOError(
+                '`{}` file already exists or its name is too long'.format(name))
         return name
+
 
 def upload_path_handler(instance, filename):
     return os.path.join(instance.data.get_upload_dirname(), filename)
 
 # For client files which the user is uploaded
+
+
 class ClientFile(models.Model):
-    data = models.ForeignKey(Data, on_delete=models.CASCADE, null=True, related_name='client_files')
+    data = models.ForeignKey(
+        Data, on_delete=models.CASCADE, null=True, related_name='client_files')
     file = models.FileField(upload_to=upload_path_handler,
-        max_length=1024, storage=MyFileSystemStorage())
+                            max_length=1024, storage=MyFileSystemStorage())
 
     class Meta:
         default_permissions = ()
         unique_together = ("data", "file")
 
 # For server files on the mounted share
+
+
 class ServerFile(models.Model):
-    data = models.ForeignKey(Data, on_delete=models.CASCADE, null=True, related_name='server_files')
+    data = models.ForeignKey(
+        Data, on_delete=models.CASCADE, null=True, related_name='server_files')
     file = models.CharField(max_length=1024)
 
     class Meta:
         default_permissions = ()
 
 # For URLs
+
+
 class RemoteFile(models.Model):
-    data = models.ForeignKey(Data, on_delete=models.CASCADE, null=True, related_name='remote_files')
+    data = models.ForeignKey(
+        Data, on_delete=models.CASCADE, null=True, related_name='remote_files')
     file = models.CharField(max_length=1024)
 
     class Meta:
@@ -280,14 +316,17 @@ class RemoteFile(models.Model):
 
 
 class RelatedFile(models.Model):
-    data = models.ForeignKey(Data, on_delete=models.CASCADE, related_name="related_files", default=1, null=True)
+    data = models.ForeignKey(Data, on_delete=models.CASCADE,
+                             related_name="related_files", default=1, null=True)
     path = models.FileField(upload_to=upload_path_handler,
                             max_length=1024, storage=MyFileSystemStorage())
-    primary_image = models.ForeignKey(Image, on_delete=models.CASCADE, related_name="related_files", null=True)
+    primary_image = models.ForeignKey(
+        Image, on_delete=models.CASCADE, related_name="related_files", null=True)
 
     class Meta:
         default_permissions = ()
         unique_together = ("data", "path")
+
 
 class Segment(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
@@ -297,19 +336,25 @@ class Segment(models.Model):
     class Meta:
         default_permissions = ()
 
+
 class Job(models.Model):
     segment = models.ForeignKey(Segment, on_delete=models.CASCADE)
-    assignee = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
-    reviewer = models.ForeignKey(User, null=True, blank=True, related_name='review_job_set', on_delete=models.SET_NULL)
+    assignee = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL)
+    reviewer = models.ForeignKey(
+        User, null=True, blank=True, related_name='review_job_set', on_delete=models.SET_NULL)
     status = models.CharField(max_length=32, choices=StatusChoice.choices(),
-        default=StatusChoice.ANNOTATION)
+                              default=StatusChoice.ANNOTATION)
 
     class Meta:
         default_permissions = ()
 
+
 class Label(models.Model):
-    task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, null=True, blank=True, on_delete=models.CASCADE)
+    task = models.ForeignKey(
+        Task, null=True, blank=True, on_delete=models.CASCADE)
+    project = models.ForeignKey(
+        Project, null=True, blank=True, on_delete=models.CASCADE)
     name = SafeCharField(max_length=64)
     color = models.CharField(default='', max_length=8)
 
@@ -319,6 +364,7 @@ class Label(models.Model):
     class Meta:
         default_permissions = ()
         unique_together = ('task', 'name')
+
 
 class AttributeType(str, Enum):
     CHECKBOX = 'checkbox'
@@ -334,12 +380,13 @@ class AttributeType(str, Enum):
     def __str__(self):
         return self.value
 
+
 class AttributeSpec(models.Model):
     label = models.ForeignKey(Label, on_delete=models.CASCADE)
     name = models.CharField(max_length=64)
     mutable = models.BooleanField()
     input_type = models.CharField(max_length=16,
-        choices=AttributeType.choices())
+                                  choices=AttributeType.choices())
     default_value = models.CharField(max_length=128)
     values = models.CharField(max_length=4096)
 
@@ -349,6 +396,7 @@ class AttributeSpec(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class AttributeVal(models.Model):
     # TODO: add a validator here to be sure that it corresponds to self.label
@@ -360,8 +408,9 @@ class AttributeVal(models.Model):
         abstract = True
         default_permissions = ()
 
+
 class ShapeType(str, Enum):
-    RECTANGLE = 'rectangle' # (x0, y0, x1, y1)
+    RECTANGLE = 'rectangle'  # (x0, y0, x1, y1)
     POLYGON = 'polygon'     # (x0, y0, ..., xn, yn)
     POLYLINE = 'polyline'   # (x0, y0, ..., xn, yn)
     POINTS = 'points'       # (x0, y0, ..., xn, yn)
@@ -374,6 +423,7 @@ class ShapeType(str, Enum):
     def __str__(self):
         return self.value
 
+
 class SourceType(str, Enum):
     AUTO = 'auto'
     MANUAL = 'manual'
@@ -384,6 +434,7 @@ class SourceType(str, Enum):
 
     def __str__(self):
         return self.value
+
 
 class ReviewStatus(str, Enum):
     ACCEPTED = 'accepted'
@@ -397,6 +448,7 @@ class ReviewStatus(str, Enum):
     def __str__(self):
         return self.value
 
+
 class Annotation(models.Model):
     id = models.BigAutoField(primary_key=True)
     job = models.ForeignKey(Job, on_delete=models.CASCADE)
@@ -404,15 +456,17 @@ class Annotation(models.Model):
     frame = models.PositiveIntegerField()
     group = models.PositiveIntegerField(null=True)
     source = models.CharField(max_length=16, choices=SourceType.choices(),
-        default=str(SourceType.MANUAL), null=True)
+                              default=str(SourceType.MANUAL), null=True)
 
     class Meta:
         abstract = True
         default_permissions = ()
 
+
 class Commit(models.Model):
     id = models.BigAutoField(primary_key=True)
-    author = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    author = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL)
     version = models.PositiveIntegerField(default=0)
     timestamp = models.DateTimeField(auto_now=True)
     message = models.CharField(max_length=4096, default="")
@@ -421,8 +475,11 @@ class Commit(models.Model):
         abstract = True
         default_permissions = ()
 
+
 class JobCommit(Commit):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="commits")
+    job = models.ForeignKey(
+        Job, on_delete=models.CASCADE, related_name="commits")
+
 
 class FloatArrayField(models.TextField):
     separator = ","
@@ -441,6 +498,7 @@ class FloatArrayField(models.TextField):
     def get_prep_value(self, value):
         return self.separator.join(map(str, value))
 
+
 class Shape(models.Model):
     type = models.CharField(max_length=16, choices=ShapeType.choices())
     occluded = models.BooleanField(default=False)
@@ -451,23 +509,30 @@ class Shape(models.Model):
         abstract = True
         default_permissions = ()
 
+
 class LabeledImage(Annotation):
     pass
+
 
 class LabeledImageAttributeVal(AttributeVal):
     image = models.ForeignKey(LabeledImage, on_delete=models.CASCADE)
 
+
 class LabeledShape(Annotation, Shape):
     pass
+
 
 class LabeledShapeAttributeVal(AttributeVal):
     shape = models.ForeignKey(LabeledShape, on_delete=models.CASCADE)
 
+
 class LabeledTrack(Annotation):
     pass
 
+
 class LabeledTrackAttributeVal(AttributeVal):
     track = models.ForeignKey(LabeledTrack, on_delete=models.CASCADE)
+
 
 class TrackedShape(Shape):
     id = models.BigAutoField(primary_key=True)
@@ -475,33 +540,44 @@ class TrackedShape(Shape):
     frame = models.PositiveIntegerField()
     outside = models.BooleanField(default=False)
 
+
 class TrackedShapeAttributeVal(AttributeVal):
     shape = models.ForeignKey(TrackedShape, on_delete=models.CASCADE)
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     rating = models.FloatField(default=0.0)
 
+
 class Review(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE)
-    reviewer = models.ForeignKey(User, null=True, blank=True, related_name='reviews', on_delete=models.SET_NULL)
-    assignee = models.ForeignKey(User, null=True, blank=True, related_name='reviewed', on_delete=models.SET_NULL)
+    reviewer = models.ForeignKey(
+        User, null=True, blank=True, related_name='reviews', on_delete=models.SET_NULL)
+    assignee = models.ForeignKey(
+        User, null=True, blank=True, related_name='reviewed', on_delete=models.SET_NULL)
     estimated_quality = models.FloatField()
     status = models.CharField(max_length=16, choices=ReviewStatus.choices())
+
 
 class Issue(models.Model):
     frame = models.PositiveIntegerField()
     position = FloatArrayField()
     job = models.ForeignKey(Job, on_delete=models.CASCADE)
-    review = models.ForeignKey(Review, null=True, blank=True, on_delete=models.SET_NULL)
-    owner = models.ForeignKey(User, null=True, blank=True, related_name='issues', on_delete=models.SET_NULL)
-    resolver = models.ForeignKey(User, null=True, blank=True, related_name='resolved_issues', on_delete=models.SET_NULL)
+    review = models.ForeignKey(
+        Review, null=True, blank=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey(
+        User, null=True, blank=True, related_name='issues', on_delete=models.SET_NULL)
+    resolver = models.ForeignKey(
+        User, null=True, blank=True, related_name='resolved_issues', on_delete=models.SET_NULL)
     created_date = models.DateTimeField(auto_now_add=True)
     resolved_date = models.DateTimeField(null=True, blank=True)
 
+
 class Comment(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
-    author = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    author = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL)
     message = models.TextField(default='')
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
